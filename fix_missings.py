@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 from typing import List,Tuple
 from cv2 import cv2
 import os
+from utils import str2img
 
 def complete_minor_missings(minor_missings:List, df):
     minors = []
@@ -75,9 +76,6 @@ def complete_major_missings(major_missings:List, features:np.ndarray, df, images
                 exit(0)
         """
     return np.concatenate(majors,axis=1)
-
-def str2img(str_img:str, img_size:Tuple=(96,96)):
-    return np.array([int(pixel) for pixel in str_img.split(" ")]).astype(np.uint8).reshape(img_size)
 
 def draw_img(img,landmark):
     bgr = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)

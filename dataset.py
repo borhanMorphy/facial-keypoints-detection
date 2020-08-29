@@ -4,9 +4,7 @@ import numpy as np
 from cv2 import cv2
 from random import shuffle
 from typing import List
-
-def load_img(img_path:str):
-    return cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2GRAY)
+from utils import load_img
 
 class FKDataset_train(Dataset):
     __label_mapper__ = [

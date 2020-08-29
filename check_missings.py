@@ -6,8 +6,8 @@ def check(key:str, arr1:np.ndarray, arr2:np.ndarray):
     miss1, = np.where(np.isnan(arr1))
     miss2, = np.where(np.isnan(arr2))
 
-    print(f"total missing values for key {key}_x is: ",miss1.shape[0])
-    print(f"total missing values for key {key}_y is: ",miss2.shape[0])
+    print(f"total missing values for key {key}_x is: ", miss1.shape[0])
+    print(f"total missing values for key {key}_y is: ", miss2.shape[0])
     print(f"is missing values matches: {(miss1 == miss2).all()}\n")
 
 def main(train_csv_path:str):

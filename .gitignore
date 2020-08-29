@@ -1,4 +1,2 @@
-*.csv
-*.jpg
-*.txt
 *.pyc
+data/

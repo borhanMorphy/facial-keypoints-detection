@@ -5,9 +5,6 @@ import numpy as np
 from typing import Tuple
 import json
 
-def str2img(str_img:str, img_size:Tuple=(96,96)):
-    return np.array([int(pixel) for pixel in str_img.split(" ")]).astype(np.uint8).reshape(img_size)
-
 def main(file_name:str):
     fname = os.path.splitext(file_name)[0]
     if not os.path.exists(fname):
