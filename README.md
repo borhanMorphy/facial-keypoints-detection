@@ -4,7 +4,6 @@ Facial keypoints detection with end-to-end development cycle
 refered competition: [facial-keypoints-detection](https://www.kaggle.com/c/facial-keypoints-detection)
 
 ## Contents
-  - [Contents](#contents)
   - [Introduction](#introduction)
   - [Project Setup](#project-setup)
   - [Data Discovery](#data-discovery)
