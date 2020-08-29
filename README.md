@@ -39,7 +39,7 @@ unzip ./data/test.zip -d ./data/
 rm ./data/*.zip
 ```
 ### Data Discovery
-In the competition author explicitly says that, some of the data is missing
+In the competition author explicitly says that, some of the training data is missing
 > In some examples, some of the target keypoint positions are misssing (encoded as missing entries in the csv, i.e., with nothing between two commas)
 
 Run the following script to see which of the fields have missing data, how many row is missing and do missing rows overlaps with each other or not
