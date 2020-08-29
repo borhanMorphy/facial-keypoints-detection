@@ -44,7 +44,7 @@ In the competition author explicitly says that, some of the data is missing
 
 Run the following script to see which of the fields have missing data, how many row is missing and do missing rows overlaps with each other or not
 ```
-python3 check_missings.py ./data/training.csv
+python3 check_missings.py -i ./data/training.csv
 ```
 When we look at the output;<br>
 with given 30 features<br>
@@ -53,8 +53,23 @@ with given 30 features<br>
 other 22 features does contain missing data and missing data percentage is between %65 - %70<br>
 
 ### Pre-training
-In this section we will handle missing data before actual training.<br>
+In this section we will handle missing data before actual training and extract images/annotations from csv file.<br>
+to fix missing data, we will follow 2 approaches.<br>
+1) for features that had missing data percentage is ~ %1, we will use mean values.
+2) for features that had missing data percentage is ~ %67, we will use linear regression.<br>
+with help of non-missing features, we will predict missing values
 
+to achive these steps run the following script, which will fix the missing values and save the new csv file as `training_fixed.csv`
+```
+# run with --debug flag if you want to see the prediction result
+python3 fix_missings.py -i ./data/training.csv --debug
+```
+
+to extract images and annotations from csv file use the following script
+```
+# this script will extract data to ./data/training_fixed/ and ./data/test/ folder
+python3 csv2images.py --train-input ./data/training_fixed.csv --test-input ./data/test.csv
+```
 
 ### Training
 

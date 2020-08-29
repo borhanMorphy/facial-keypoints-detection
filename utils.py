@@ -21,7 +21,7 @@ def visualize(img:np.ndarray, keypoints:np.ndarray) -> int:
         int: clicked cv2.waitKey key
     """
     simg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR) if len(img.shape) == 2 else img.copy()
-    assert len(keypoints.shape) = 2 and keypoints.shape[-1] == 2,"wrong keypoints format"
+    assert len(keypoints.shape) == 2 and keypoints.shape[-1] == 2,"wrong keypoints format"
     for x,y in keypoints.astype(np.int32):
         simg = cv2.circle(simg, (x,y), (2), (0,0,255))
     cv2.imshow("", simg)

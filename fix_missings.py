@@ -4,11 +4,21 @@ from sklearn.linear_model import LinearRegression
 from typing import List,Tuple
 from cv2 import cv2
 import os
-from utils import str2img
+from utils import str2img,visualize
+import argparse
 
-def complete_minor_missings(minor_missings:List, df):
+def parse_arguments():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--input','-i',type=str,default='./data/training.csv',help='give training csv file path')
+    ap.add_argument('--debug','-d',action='store_true',help='use this flag if you want to see predicted values')
+
+    return ap.parse_args()
+
+def complete_minor_missings(minor_missings:List, df, images, debug:bool) -> np.ndarray:
     minors = []
+    print("handling minor missings...")
     for minor_missing in minor_missings:
+        print(f"trying to fix missing values for {minor_missing}")
         minor_x = df[minor_missing+"_x"].to_numpy()
         minor_y = df[minor_missing+"_y"].to_numpy()
 
@@ -16,8 +26,24 @@ def complete_minor_missings(minor_missings:List, df):
         miss_mask_y = np.isnan(minor_y)
 
         # complete missing values with mean
-        minor_x[miss_mask_x] = minor_x[~miss_mask_x].mean()
-        minor_y[miss_mask_y] = minor_y[~miss_mask_y].mean()
+        mean_x = minor_x[~miss_mask_x].mean()
+        minor_x[miss_mask_x] = mean_x
+
+        mean_y = minor_y[~miss_mask_y].mean()
+        minor_y[miss_mask_y] = mean_y
+
+        if debug:
+            selection_x, = np.where(miss_mask_x)
+            selection_y, = np.where(miss_mask_y)
+            keypoints = np.array([mean_x,mean_y]).reshape(-1,2)
+            for i,j in zip(selection_x,selection_y):
+                assert i==j
+                img = str2img(images.iloc[i])
+                print("press `esc` to skip minor missings, any other keys to continue")
+                q = visualize(img,keypoints*96)
+                if q == 27:
+                    debug = False
+                    break
 
         minor = np.stack([minor_x,minor_y],axis=1)
         minors.append(minor)
@@ -25,12 +51,13 @@ def complete_minor_missings(minor_missings:List, df):
     # N,6
     return np.concatenate(minors,axis=1)
 
-def complete_major_missings(major_missings:List, features:np.ndarray, df, images):
+def complete_major_missings(major_missings:List, features:np.ndarray, df, images, debug:bool):
     # split as train / test using missing values
     # train linear regression model for prediction
     # predict missing values
     # set missing values
     # next
+    print("handling major missings...")
     majors = []
     for major_missing in major_missings:
         print(f"training for {major_missing}")
@@ -66,25 +93,19 @@ def complete_major_missings(major_missings:List, features:np.ndarray, df, images
         major = np.stack([major_x,major_y],axis=1) # N,2
         majors.append(major)
         
-        """
-        # for debug
-        indexes, = np.where(miss_mask_x)
-        for img,landmark in zip(images.iloc[indexes],major[miss_mask_x,:]):
-            img = str2img(img)
-            res = draw_img(img,landmark*96)
-            if res == 27:
-                exit(0)
-        """
+        if debug:
+            indexes, = np.where(miss_mask_x)
+            for img,landmark in zip(images.iloc[indexes],major[miss_mask_x,:]):
+                img = str2img(img)
+                print("press `esc` to skip minor missings, any other keys to continue")
+                q = visualize(img,landmark.reshape(-1,2)*96)
+                if q == 27:
+                    debug = False
+                    break
+
     return np.concatenate(majors,axis=1)
 
-def draw_img(img,landmark):
-    bgr = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-    x,y = landmark.astype(np.int32)
-    bgr = cv2.circle(bgr,(x,y),2,(0,0,255))
-    cv2.imshow("",bgr)
-    return cv2.waitKey(0)
-
-def main(training_csv_file:str):
+def main(training_csv_file:str, debug:bool):
     minor_missings = ['left_eye_center','right_eye_center','mouth_center_bottom_lip']
     major_missings = [
         'left_eye_inner_corner','left_eye_outer_corner',
@@ -104,13 +125,13 @@ def main(training_csv_file:str):
     source_keypoints = np.stack([df[non_missing+'_x'].to_numpy(), df[non_missing+'_y'].to_numpy()], axis=1)
 
     # N,6
-    minors = complete_minor_missings(minor_missings,df)
+    minors = complete_minor_missings(minor_missings,df,images,debug)
 
     # N,8
     features = np.concatenate([source_keypoints,minors],axis=1)
 
     # N,22
-    majors = complete_major_missings(major_missings,features,df,images)
+    majors = complete_major_missings(major_missings,features,df,images,debug)
 
     # N,30
     features = np.concatenate([features,majors],axis=1)
@@ -126,9 +147,9 @@ def main(training_csv_file:str):
     features.append(images)
     altered_df = pd.DataFrame(zip(*features), columns=headers)
 
-    new_file_path = os.path.join(os.path.dirname(training_csv_file), 'training_fixed.csv')
+    new_file_path = os.path.splitext(training_csv_file)[0]+"_fixed.csv"
     altered_df.to_csv(new_file_path)
 
 if __name__ == "__main__":
-    import sys
-    main(sys.argv[1])
+    args = parse_arguments()
+    main(args.input,args.debug)

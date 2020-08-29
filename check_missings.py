@@ -1,5 +1,12 @@
 import pandas as pd
 import numpy as np
+import argparse
+
+def parse_arguments():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--input','-i',type=str,default='./data/training.csv',help='give training csv file path')
+
+    return ap.parse_args()
 
 def check(key:str, arr1:np.ndarray, arr2:np.ndarray):
     print(f"processing {key}")
@@ -47,7 +54,6 @@ def main(train_csv_path:str):
         arr2 = train_df[label+"_y"].to_numpy()
         check(label,arr1,arr2)
 
-
 if __name__ == "__main__":
-    import sys
-    main(sys.argv[1])
+    args = parse_arguments()
+    main(args.input)
