@@ -39,8 +39,22 @@ unzip ./data/test.zip -d ./data/
 rm ./data/*.zip
 ```
 ### Data Discovery
+In the competition author explicitly says that, some of the data is missing
+> In some examples, some of the target keypoint positions are misssing (encoded as missing entries in the csv, i.e., with nothing between two commas)
+
+Run the following script to see which of the fields have missing data, how many row is missing and do missing rows overlaps with each other or not
+```
+python3 check_missings.py ./data/training.csv
+```
+When we look at the output;<br>
+with given 30 features<br>
+2 features does not contain missing data<br>
+6 features does contain missing data but missing data percentage is below %1<br>
+other 22 features does contain missing data and missing data percentage is between %65 - %70<br>
 
 ### Pre-training
+In this section we will handle missing data before actual training.<br>
+
 
 ### Training
 

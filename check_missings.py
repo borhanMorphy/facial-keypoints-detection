@@ -6,9 +6,20 @@ def check(key:str, arr1:np.ndarray, arr2:np.ndarray):
     miss1, = np.where(np.isnan(arr1))
     miss2, = np.where(np.isnan(arr2))
 
-    print(f"total missing values for key {key}_x is: ", miss1.shape[0])
-    print(f"total missing values for key {key}_y is: ", miss2.shape[0])
-    print(f"is missing values matches: {(miss1 == miss2).all()}\n")
+    total_arr1 = arr1.shape[0]
+    total_miss1 = miss1.shape[0]
+
+    total_arr2 = arr2.shape[0]
+    total_miss2 = miss2.shape[0]
+
+    print(f"total missing values for key {key}_x is: {total_miss1}\t \
+        missing percent: {((total_miss1*100)/total_arr1):.02f}")
+    
+    print(f"total missing values for key {key}_y is: {total_miss2}\t \
+        missing percent: {((total_miss2*100)/total_arr2):.02f}")
+    
+    print(f"percent of t")
+    print(f"missing values matches: {(miss1 == miss2).all()}\n")
 
 def main(train_csv_path:str):
     train_df = pd.read_csv(train_csv_path)
