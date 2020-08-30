@@ -13,6 +13,7 @@ import os
 import argparse
 import json
 from typing import Dict
+from colorama import Fore, Back, Style
 
 from cv2 import cv2
 import numpy as np
@@ -35,7 +36,7 @@ def parse_arguments():
     ap.add_argument('--backbone',type=str,choices=get_available_backbones())
     ap.add_argument('--criterion',type=str,choices=get_available_criterions())
     ap.add_argument('--optimizer',type=str,choices=get_available_optimizers())
-    # TODO 
+    # TODO add scheduler
     # ap.add_argument('--scheduler',type=str,choices=)
 
     ap.add_argument('--pretrained',action='store_true')
@@ -154,7 +155,7 @@ def main(**kwargs):
     current_epoch = 0
     best_loss = math.inf
     if resume:
-        print(f"loading checkpoint from {checkpoint_path}")
+        print(Fore.CYAN, f"loading checkpoint from {checkpoint_path}",Style.RESET_ALL)
         best_loss,current_epoch = load_checkpoint(model, optimizer, scheduler=scheduler,
             save_path=checkpoint_path, suffix='last')
 
@@ -167,22 +168,22 @@ def main(**kwargs):
             for i,val_dl in enumerate(val_dls):
                 val_loss = validation_loop(val_dl, model)
                 val_losses.append(val_loss)
-                print(f"validation [{i+1}] loss:  {val_loss:.07f}")
+                print(Fore.LIGHTBLUE_EX, f"validation [{i+1}] loss:  {val_loss:.07f}",Style.RESET_ALL)
 
             mean_val_loss = sum(val_losses) / len(val_losses)
-            print(f"validation [mean] loss:  {mean_val_loss:.07f}")
+            print(Fore.LIGHTBLUE_EX, f"validation [mean] loss:  {mean_val_loss:.07f}",Style.RESET_ALL)
             if mean_val_loss < best_loss:
                 best_loss = mean_val_loss
-                print("saving best checkpoint...")
+                print(Fore.CYAN, "saving best checkpoint...",Style.RESET_ALL)
                 save_checkpoint(model,optimizer,epoch,best_loss,
                     scheduler=scheduler, suffix='best', save_path=checkpoint_path)
 
-            print("saving last checkpoint...")
+            print(Fore.CYAN, "saving last checkpoint...",Style.RESET_ALL)
             save_checkpoint(model,optimizer,epoch,best_loss,
                 scheduler=scheduler, suffix='last', save_path=checkpoint_path)
 
     except KeyboardInterrupt:
-        print("training interrupted with ctrl+c saving current state of the model")
+        print(Fore.RED, "training interrupted with ctrl+c saving current state of the model",Style.RESET_ALL)
         save_checkpoint(model,optimizer,epoch,best_loss,
             scheduler=scheduler, suffix='last', save_path=checkpoint_path)
 
@@ -206,7 +207,7 @@ def training_loop(dl,model,epoch,epochs,optimizer,
         running_loss.append(loss.item())
 
         if verbose == len(running_loss):
-            print(f"epoch [{epoch+1}/{epochs}]  iter [{current_iter_counter}/{total_iter_size}]  loss: {sum(running_loss)/verbose:.07f}")
+            print(Fore.BLUE,f"epoch [{epoch+1}/{epochs}]  iter [{current_iter_counter}/{total_iter_size}]  loss: {sum(running_loss)/verbose:.07f}",Style.RESET_ALL)
             running_loss = []
 
 def validation_loop(dl,model):
@@ -219,5 +220,5 @@ def validation_loop(dl,model):
 
 if __name__ == "__main__":
     kwargs = parse_arguments()
-    print(json.dumps(kwargs,sort_keys=False,indent=4))
+    print(Fore.GREEN, json.dumps(kwargs,sort_keys=False,indent=4),Style.RESET_ALL)
     main(**kwargs)
