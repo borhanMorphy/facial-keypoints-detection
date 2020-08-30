@@ -3,3 +3,4 @@ pandas
 opencv-python ~= 4.1
 tqdm
 colorama
+tensorboard

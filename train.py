@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 from backbones import get_backbone, get_available_backbones
 from losses import get_criterion, get_available_criterions
@@ -29,29 +30,30 @@ def parse_json(file_path:str) -> Dict:
 
 def parse_arguments():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--configs','-c',type=parse_json,default='./configs/default.json')
-    ap.add_argument('--training-data-path',type=str)
-    ap.add_argument('--checkpoint-path',type=str)
+    ap.add_argument('--configs', '-c', type=parse_json, default='./configs/default.json')
+    ap.add_argument('--training-data-path', type=str)
+    ap.add_argument('--checkpoint-path', type=str)
 
-    ap.add_argument('--backbone',type=str,choices=get_available_backbones())
-    ap.add_argument('--criterion',type=str,choices=get_available_criterions())
-    ap.add_argument('--optimizer',type=str,choices=get_available_optimizers())
+    ap.add_argument('--backbone', type=str, choices=get_available_backbones())
+    ap.add_argument('--criterion', type=str, choices=get_available_criterions())
+    ap.add_argument('--optimizer', type=str, choices=get_available_optimizers())
     # TODO add scheduler
-    # ap.add_argument('--scheduler',type=str,choices=)
+    # ap.add_argument('--scheduler', type=str, choices=)
 
-    ap.add_argument('--pretrained',action='store_true')
-    ap.add_argument('--num-classes',type=int)
-    ap.add_argument('--device',type=str,choices=['cpu','cuda'])
+    ap.add_argument('--pretrained', action='store_true')
+    ap.add_argument('--num-classes', type=int)
+    ap.add_argument('--device', type=str, choices=['cpu','cuda'])
 
-    ap.add_argument('--batch-size',type=int)
-    ap.add_argument('--epochs',type=int)
-    ap.add_argument('--verbose',type=int)
+    ap.add_argument('--batch-size', type=int)
+    ap.add_argument('--epochs', type=int)
+    ap.add_argument('--verbose', type=int)
 
-    ap.add_argument('--train-split',type=float)
-    ap.add_argument('--nfolds',type=int)
+    ap.add_argument('--train-split', type=float)
+    ap.add_argument('--nfolds', type=int)
 
-    ap.add_argument('--resume',action='store_true')
-    ap.add_argument('--seed',type=int)
+    ap.add_argument('--resume', action='store_true')
+    ap.add_argument('--seed', type=int)
+    ap.add_argument('--tensorboard-log-dir', type=str, default='./runs')
 
     kwargs = vars(ap.parse_args())
     configs = kwargs.pop('configs')
@@ -74,9 +76,9 @@ class TargetTransform():
         return torch.from_numpy(targets).float() / self.img_size
 
 def main(**kwargs):
-    # TODO add tensorboard
     training_path = kwargs.get('training_data_path')
     checkpoint_path = kwargs.get('checkpoint_path')
+    tensorboard_log_dir = kwargs.get('tensorboard_log_dir')
     if not os.path.isdir(checkpoint_path):
         os.mkdir(checkpoint_path)
 
@@ -102,6 +104,8 @@ def main(**kwargs):
     resume = kwargs.get('resume')
 
     seed = hyperparameters.get('seed')
+
+    writer = SummaryWriter(log_dir=tensorboard_log_dir)
 
     if seed: seed_everything(seed)
     
@@ -161,7 +165,7 @@ def main(**kwargs):
 
     try:
         for epoch in range(current_epoch,epochs):
-            training_loop(train_dl, model, epoch, epochs, optimizer,
+            training_loop(train_dl, model, epoch, epochs, optimizer, writer,
                 scheduler=scheduler, verbose=verbose)
 
             val_losses = []
@@ -169,9 +173,12 @@ def main(**kwargs):
                 val_loss = validation_loop(val_dl, model)
                 val_losses.append(val_loss)
                 print(Fore.LIGHTBLUE_EX, f"validation [{i+1}] loss:  {val_loss:.07f}",Style.RESET_ALL)
+                writer.add_scalar(f'Loss/val_{i+1}', val_loss, epoch)
 
             mean_val_loss = sum(val_losses) / len(val_losses)
             print(Fore.LIGHTBLUE_EX, f"validation [mean] loss:  {mean_val_loss:.07f}",Style.RESET_ALL)
+            writer.add_scalar(f'Loss/val_mean', mean_val_loss, epoch)
+            writer.flush()
             if mean_val_loss < best_loss:
                 best_loss = mean_val_loss
                 print(Fore.CYAN, "saving best checkpoint...",Style.RESET_ALL)
@@ -186,8 +193,9 @@ def main(**kwargs):
         print(Fore.RED, "training interrupted with ctrl+c saving current state of the model",Style.RESET_ALL)
         save_checkpoint(model,optimizer,epoch,best_loss,
             scheduler=scheduler, suffix='last', save_path=checkpoint_path)
+    writer.close()
 
-def training_loop(dl,model,epoch,epochs,optimizer,
+def training_loop(dl,model,epoch,epochs,optimizer,writer,
         scheduler=None,verbose:int=10,debug:bool=False):
     running_loss = []
     verbose = verbose
@@ -207,7 +215,10 @@ def training_loop(dl,model,epoch,epochs,optimizer,
         running_loss.append(loss.item())
 
         if verbose == len(running_loss):
-            print(Fore.BLUE,f"epoch [{epoch+1}/{epochs}]  iter [{current_iter_counter}/{total_iter_size}]  loss: {sum(running_loss)/verbose:.07f}",Style.RESET_ALL)
+            mean_loss = sum(running_loss)/verbose
+            print(Fore.BLUE,f"epoch [{epoch+1}/{epochs}]  iter [{current_iter_counter}/{total_iter_size}]  loss: {mean_loss:.07f}",Style.RESET_ALL)
+            writer.add_scalar(f'Loss/train', mean_loss, current_iter_counter+epoch*total_iter_size)
+            writer.flush()
             running_loss = []
 
 def validation_loop(dl,model):
