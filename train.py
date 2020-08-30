@@ -2,17 +2,62 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from backbones import get_backbone
-from losses import get_criterion
-from optimizers import get_optimizer
+from backbones import get_backbone, get_available_backbones
+from losses import get_criterion, get_available_criterions
+from optimizers import get_optimizer, get_available_optimizers
 from model import FacialKeypointsDetector
 
-import argparse
 from dataset import get_training_datasets
+
+import os
+import argparse
+import json
+from typing import Dict
+
 from cv2 import cv2
 import numpy as np
 import transforms
 import math
+from utils import save_checkpoint,load_checkpoint,seed_everything
+# TODO write docstring
+
+def parse_json(file_path:str) -> Dict:
+    with open(file_path,"r") as foo:
+        data = json.load(foo)
+    return data
+
+def parse_arguments():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--configs','-c',type=parse_json,default='./configs/default.json')
+    ap.add_argument('--training-data-path',type=str)
+    ap.add_argument('--checkpoint-path',type=str)
+
+    ap.add_argument('--backbone',type=str,choices=get_available_backbones())
+    ap.add_argument('--criterion',type=str,choices=get_available_criterions())
+    ap.add_argument('--optimizer',type=str,choices=get_available_optimizers())
+    # TODO 
+    # ap.add_argument('--scheduler',type=str,choices=)
+
+    ap.add_argument('--pretrained',action='store_true')
+    ap.add_argument('--num-classes',type=int)
+    ap.add_argument('--device',type=str,choices=['cpu','cuda'])
+
+    ap.add_argument('--batch-size',type=int)
+    ap.add_argument('--epochs',type=int)
+    ap.add_argument('--verbose',type=int)
+
+    ap.add_argument('--train-split',type=float)
+    ap.add_argument('--nfolds',type=int)
+
+    ap.add_argument('--resume',action='store_true')
+    ap.add_argument('--seed',type=int)
+
+    kwargs = vars(ap.parse_args())
+    configs = kwargs.pop('configs')
+    
+    for k,v in kwargs.items():
+        if not isinstance(v,type(None)): configs[k] = v
+    return configs
 
 def custom_collate_fn(batch):
     imgs,targets = zip(*batch)
@@ -29,32 +74,39 @@ class TargetTransform():
 
 def main(**kwargs):
     # TODO add tensorboard
-    training_path = kwargs.get('training_data_path','./data/training_fixed')
+    training_path = kwargs.get('training_data_path')
+    checkpoint_path = kwargs.get('checkpoint_path')
+    if not os.path.isdir(checkpoint_path):
+        os.mkdir(checkpoint_path)
 
-    backbone_name = kwargs.get('backbone','shufflenet')
-    criterion_name = kwargs.get('criterion','MSE').upper()
-    optimizer_name = kwargs.get('optimizer','ADAM').upper()
+    backbone_name = kwargs.get('backbone')
+    criterion_name = kwargs.get('criterion').upper()
+    optimizer_name = kwargs.get('optimizer').upper()
+    scheduler = kwargs.get('scheduler',None)
 
-    pretrained = kwargs.get('pretrained',True)
-    num_classes = kwargs.get('num_classes',30)
-    device = kwargs.get('device','cuda')
+    pretrained = kwargs.get('pretrained')
+    num_classes = kwargs.get('num_classes')
+    device = kwargs.get('device')
 
-    batch_size = kwargs.get('batch_size',16)
-    epochs = kwargs.get('epochs',10)
-    hyperparameters = kwargs.get('hyperparameters', {})
+    batch_size = kwargs.get('batch_size')
+    epochs = kwargs.get('epochs')
+    hyperparameters = kwargs.get('hyperparameters',{})
+    verbose = kwargs.get('verbose')
 
-    train_split = kwargs.get('train_split',0.7)
-    val_splits = kwargs.get('val_splits',[0.15, 0.15])
+    train_split = kwargs.get('train_split')
+    nfolds = kwargs.get('nfolds')
 
-    # TODO add resume
-    resume = kwargs.get('resume',True)
-    # TODO add seed
-    seed = kwargs.get('seed',-1)
+    val_splits = [(1-train_split) / nfolds] * nfolds
 
+    resume = kwargs.get('resume')
+
+    seed = hyperparameters.get('seed')
+
+    if seed: seed_everything(seed)
+    
     # TODO calculate mean and std
-    mean = kwargs.get('mean',0)
-    std = kwargs.get('std',1)
-    best_loss = math.inf
+    mean = hyperparameters.get('mean',0)
+    std = hyperparameters.get('std',1)
 
     splits = [train_split]+val_splits
     assert sum(splits) <= 1,"given splits must be lower or equal than 1"
@@ -99,28 +151,43 @@ def main(**kwargs):
         val_dls.append( torch.utils.data.DataLoader(
             val_ds, batch_size=batch_size, num_workers=2) )
 
-    for epoch in range(epochs):
-        training_loop(train_dl, model, epoch, optimizer)
+    current_epoch = 0
+    best_loss = math.inf
+    if resume:
+        print(f"loading checkpoint from {checkpoint_path}")
+        best_loss,current_epoch = load_checkpoint(model, optimizer, scheduler=scheduler,
+            save_path=checkpoint_path, suffix='last')
 
-        val_losses = []
-        for i,val_dl in enumerate(val_dls):
-            val_loss = validation_loop(val_dl, model)
-            val_losses.append(val_loss)
-            print(f"[{i}+1] validation loss is: {val_loss:.04f}")
+    try:
+        for epoch in range(current_epoch,epochs):
+            training_loop(train_dl, model, epoch, epochs, optimizer,
+                scheduler=scheduler, verbose=verbose)
 
-        mean_val_loss = sum(val_losses) / len(val_losses)
-        print(f"[mean] validation loss is: {mean_val_loss:.04f}")
-        if mean_val_loss < best_loss:
-            best_loss = mean_val_loss
-            # TODO best loss achived, save state of the model as best.pt
-            pass
+            val_losses = []
+            for i,val_dl in enumerate(val_dls):
+                val_loss = validation_loop(val_dl, model)
+                val_losses.append(val_loss)
+                print(f"validation [{i+1}] loss:  {val_loss:.07f}")
 
-        # TODO after each epoch save loss as last.pt
+            mean_val_loss = sum(val_losses) / len(val_losses)
+            print(f"validation [mean] loss:  {mean_val_loss:.07f}")
+            if mean_val_loss < best_loss:
+                best_loss = mean_val_loss
+                print("saving best checkpoint...")
+                save_checkpoint(model,optimizer,epoch,best_loss,
+                    scheduler=scheduler, suffix='best', save_path=checkpoint_path)
 
-def training_loop(dl,model,epoch,optimizer,
+            print("saving last checkpoint...")
+            save_checkpoint(model,optimizer,epoch,best_loss,
+                scheduler=scheduler, suffix='last', save_path=checkpoint_path)
+
+    except KeyboardInterrupt:
+        print("training interrupted with ctrl+c saving current state of the model")
+        save_checkpoint(model,optimizer,epoch,best_loss,
+            scheduler=scheduler, suffix='last', save_path=checkpoint_path)
+
+def training_loop(dl,model,epoch,epochs,optimizer,
         scheduler=None,verbose:int=10,debug:bool=False):
-    # TODO add scheduler
-
     running_loss = []
     verbose = verbose
     total_iter_size = len(dl.dataset)
@@ -139,7 +206,7 @@ def training_loop(dl,model,epoch,optimizer,
         running_loss.append(loss.item())
 
         if verbose == len(running_loss):
-            print(f"epoch [{epoch}] iter [{current_iter_counter}/{total_iter_size}] loss: {sum(running_loss)/verbose}")
+            print(f"epoch [{epoch+1}/{epochs}]  iter [{current_iter_counter}/{total_iter_size}]  loss: {sum(running_loss)/verbose:.07f}")
             running_loss = []
 
 def validation_loop(dl,model):
@@ -151,4 +218,6 @@ def validation_loop(dl,model):
     return sum(running_loss)/len(running_loss)
 
 if __name__ == "__main__":
-    main()
+    kwargs = parse_arguments()
+    print(json.dumps(kwargs,sort_keys=False,indent=4))
+    main(**kwargs)

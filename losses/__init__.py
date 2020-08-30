@@ -16,3 +16,7 @@ def get_criterion(criterion_name:str, kwargs:Dict={}):
     # re-write
     loss_configs.update(kwargs)
     return loss_cls(**loss_configs)
+
+
+def get_available_criterions():
+    return list(__criterion_mapper__.keys())

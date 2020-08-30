@@ -1,6 +1,10 @@
 from typing import Tuple
 import numpy as np
 from cv2 import cv2
+import os
+from collections import OrderedDict
+import torch
+import random
 
 def str2img(str_img:str, img_size:Tuple=(96,96)) -> np.ndarray:
     """converts string image to numpy image"""
@@ -28,5 +32,37 @@ def visualize(img:np.ndarray, keypoints:np.ndarray) -> int:
     return cv2.waitKey(0)
 
 def seed_everything(magic_number:int):
-    # TODO
-    pass
+    assert isinstance(magic_number,int),f"magic number type is incorrect, found:{type(magic_number)} but expected integer"
+    random.seed(magic_number)
+    torch.manual_seed(magic_number)
+    np.random.seed(magic_number)
+
+def save_checkpoint(model, optimizer, epoch:int, best_loss:float,
+        scheduler=None, suffix:str='last', save_path:str='./checkpoints'):
+    checkpoint = OrderedDict()
+    checkpoint['module'] = model.state_dict()
+    checkpoint['optimizer'] = optimizer.state_dict()
+    checkpoint['scheduler'] = scheduler.state_dict() if scheduler else None
+    checkpoint['best_loss'] = best_loss
+    checkpoint['epoch'] = epoch
+    checkpoint_file_path = os.path.join(save_path,f"{model.name}_{suffix}.pt")
+    torch.save(checkpoint, checkpoint_file_path)
+
+def load_checkpoint(model, optimizer, scheduler=None,
+        save_path:str='./checkpoints',suffix:str='last') -> Tuple[int,float]:
+
+    checkpoint_file_path = os.path.join(save_path,f"{model.name}_{suffix}.pt")
+    assert os.path.isfile(checkpoint_file_path),f"checkpoint does not found for given directory {save_path}"
+    state_dict = torch.load(checkpoint_file_path)
+    assert "module" in state_dict,"module not found in the state dictionary"
+    assert "optimizer" in state_dict,"optimizer not found in the state dictionary"
+    assert "scheduler" in state_dict,"scheduler not found in the state dictionary"
+    assert "best_loss" in state_dict,"best_loss not found in the state dictionary"
+    assert "epoch" in state_dict,"epoch not found in the state dictionary"
+
+    model.load_state_dict(state_dict['module'])
+    optimizer.load_state_dict(state_dict['optimizer'])
+    if scheduler: scheduler.load_state_dict(state_dict['scheduler'])
+    best_loss = state_dict['best_loss']
+    epoch = state_dict['epoch']
+    return best_loss,epoch

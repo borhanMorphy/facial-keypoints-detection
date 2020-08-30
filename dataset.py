@@ -68,7 +68,7 @@ class FKDataset_train(Dataset):
         return len(self.ids)
 
 def get_training_datasets(root_path:str, train_transforms, val_transforms, split_ratios):
-    assert sum(split_ratios) == 1.0
+    assert sum(split_ratios) <= 1.0
     names = [os.path.splitext(fname)[0] for fname in os.listdir(root_path) if fname.endswith(".jpg")]
     shuffle(names)
     current = 0

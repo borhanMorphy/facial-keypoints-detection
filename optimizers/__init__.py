@@ -26,3 +26,7 @@ def get_optimizer(optimizer_name:str, parameters, kwargs:Dict={}) -> optim.Optim
     # re-write
     optim_configs.update(kwargs)
     return optim_cls(parameters, **optim_configs)
+
+
+def get_available_optimizers():
+    return list(__optimizer_mapper__.keys())

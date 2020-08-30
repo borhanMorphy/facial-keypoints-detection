@@ -1,0 +1,26 @@
+{
+    "training_data_path": "./data/training_fixed",
+    "checkpoint_path": "./checkpoints",
+
+    "backbone": "shufflenet",
+    "criterion": "MSE",
+    "optimizer": "ADAM",
+
+    "device": "cuda",
+    "num_classes": 30,
+    "batch_size": 16,
+    "epochs": 10,
+    "train_split": 0.7,
+    "nfolds": 3,
+
+    "hyperparameters": {
+        "optimizer": {
+            "lr": 1e-3,
+            "weight_decay": 5e-4
+        },
+        "mean": 0,
+        "std": 1
+    },
+
+    "verbose": 10
+}
