@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.cuda.amp import GradScaler,autocast
 from torch.utils.tensorboard import SummaryWriter
 
 from backbones import get_backbone, get_available_backbones
@@ -128,10 +129,13 @@ def main(**kwargs):
     optimizer = get_optimizer(optimizer_name, model.parameters(),
         kwargs=hyperparameters.get('optimizer',{}))
 
+    scaler = GradScaler()
+
     train_transforms = val_transforms = None
     train_target_transform = val_target_transform = TargetTransform(original_img_size)
     train_transform = transforms.Compose([
         transforms.ToPILImage(),
+        transforms.ColorJitter(brightness=0.3,contrast=0.5,saturation=0.5,hue=0.3),
         transforms.Resize(model.get_input_size()),
         transforms.ToTensor(),
         transforms.Normalize(mean,std)])
@@ -165,7 +169,7 @@ def main(**kwargs):
 
     try:
         for epoch in range(current_epoch,epochs):
-            training_loop(train_dl, model, epoch, epochs, optimizer, writer,
+            training_loop(train_dl, model, epoch, epochs, optimizer, writer,scaler,
                 scheduler=scheduler, verbose=verbose)
 
             val_losses = []
@@ -195,7 +199,7 @@ def main(**kwargs):
             scheduler=scheduler, suffix='last', save_path=checkpoint_path)
     writer.close()
 
-def training_loop(dl,model,epoch,epochs,optimizer,writer,
+def training_loop(dl,model,epoch,epochs,optimizer,writer,scaler,
         scheduler=None,verbose:int=10,debug:bool=False):
     running_loss = []
     verbose = verbose
@@ -205,10 +209,12 @@ def training_loop(dl,model,epoch,epochs,optimizer,writer,
         current_iter_counter += dl.batch_size
         optimizer.zero_grad()
 
-        loss = model.training_step(imgs,targets)
+        with autocast():
+            loss = model.training_step(imgs,targets)
 
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
         if scheduler: scheduler.step()
 

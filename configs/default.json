@@ -3,19 +3,20 @@
     "checkpoint_path": "./checkpoints",
 
     "backbone": "shufflenet",
-    "criterion": "MSE",
+    "criterion": "RMSE",
     "optimizer": "ADAM",
 
     "device": "cuda",
+    "precision":"float32",
     "num_classes": 30,
-    "batch_size": 16,
+    "batch_size": 32,
     "epochs": 10,
     "train_split": 0.7,
     "nfolds": 3,
 
     "hyperparameters": {
         "optimizer": {
-            "lr": 1e-3,
+            "lr": 3e-4,
             "weight_decay": 5e-4
         },
         "mean": 0,

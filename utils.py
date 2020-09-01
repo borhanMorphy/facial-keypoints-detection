@@ -66,3 +66,15 @@ def load_checkpoint(model, optimizer, scheduler=None,
     best_loss = state_dict['best_loss']
     epoch = state_dict['epoch']
     return best_loss,epoch
+
+def load_model(model,save_path:str='./checkpoints',suffix:str='best'):
+    checkpoint_file_path = os.path.join(save_path,f"{model.name}_{suffix}.pt")
+    assert os.path.isfile(checkpoint_file_path),f"checkpoint does not found for given directory {save_path}"
+    state_dict = torch.load(checkpoint_file_path)
+    assert "module" in state_dict,"module not found in the state dictionary"
+    assert "optimizer" in state_dict,"optimizer not found in the state dictionary"
+    assert "scheduler" in state_dict,"scheduler not found in the state dictionary"
+    assert "best_loss" in state_dict,"best_loss not found in the state dictionary"
+    assert "epoch" in state_dict,"epoch not found in the state dictionary"
+
+    model.load_state_dict(state_dict['module'])

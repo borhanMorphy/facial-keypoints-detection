@@ -1,15 +1,21 @@
 import torch.nn as nn
 from typing import Dict
+from .rmse import RMSELoss
 
 __criterion_mapper__ = {
     'MSE':{
         'cls': nn.MSELoss,
         'kwargs': {}
+    },
+
+    'RMSE':{
+        'cls': RMSELoss,
+        'kwargs':{}
     }
 }
 
 def get_criterion(criterion_name:str, kwargs:Dict={}):
-    assert criterion_name in __criterion_mapper__,"given optimizer is not valid"
+    assert criterion_name in __criterion_mapper__,"given criterion is not valid"
 
     loss_cls = __criterion_mapper__[criterion_name]['cls']
     loss_configs = __criterion_mapper__[criterion_name]['kwargs']
