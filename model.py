@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class FacialKeypointsDetector(nn.Module):
     def __init__(self, backbone:nn.Module, criterion=None,
-            device:str='cpu', precision:torch.dtype=torch.float32, num_classes:int=30):
+            device:str='cpu', num_classes:int=30):
 
         super(FacialKeypointsDetector,self).__init__()
 
@@ -13,9 +13,8 @@ class FacialKeypointsDetector(nn.Module):
         self.head = nn.Linear(backbone.out_features, num_classes)
         self.criterion = criterion
         self.device = device
-        self.precision = precision
         self.name = f"fkd_{backbone.name}"
-        self.to(device,precision)
+        self.to(device)
 
     def forward(self, data:torch.Tensor):
         if len(data.shape) == 3:
@@ -29,16 +28,16 @@ class FacialKeypointsDetector(nn.Module):
     def training_step(self, data:torch.Tensor, targets:torch.Tensor):
         # if model mode is not training than switch to training mode
         if not self.training: self.train()
-        preds = self.forward(data.to(self.device,self.precision))
-        loss = self.criterion(preds, targets.to(self.device,self.precision))
+        preds = self.forward(data.to(self.device))
+        loss = self.criterion(preds, targets.to(self.device))
         return loss
 
     def val_step(self, data:torch.Tensor, targets:torch.Tensor):
         # if model mode is training than switch to eval mode
         if self.training: self.eval()
         with torch.no_grad():
-            preds = self.forward(data.to(self.device,self.precision))
-            loss = self.criterion(preds, targets.to(self.device,self.precision))
+            preds = self.forward(data.to(self.device))
+            loss = self.criterion(preds, targets.to(self.device))
         return loss
 
     def test_step(self, data:torch.Tensor, targets:torch.Tensor):
@@ -46,15 +45,15 @@ class FacialKeypointsDetector(nn.Module):
         if self.training: self.eval()
         with torch.no_grad():
             # TODO do not use criterion, use competition metric
-            preds = self.forward(data.to(self.device,self.precision))
-            loss = self.criterion(preds, targets.to(self.device,self.precision))
+            preds = self.forward(data.to(self.device))
+            loss = self.criterion(preds, targets.to(self.device))
         return loss
 
     def predict(self, data:torch.Tensor):
         if self.training:self.eval()
 
         with torch.no_grad():
-            preds = self.forward(data.to(self.device,self.precision))
+            preds = self.forward(data.to(self.device))
 
         return preds
 

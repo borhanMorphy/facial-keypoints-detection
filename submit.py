@@ -37,7 +37,6 @@ def parse_arguments():
 
     ap.add_argument('--num-classes', '-nc', type=int, default=30)
     ap.add_argument('--device', '-d', type=str, choices=['cpu','cuda'], default='cuda')
-    ap.add_argument('--precision', '-p', type=str, choices=['float32','float16'], default='float32')
 
     ap.add_argument('--batch-size', '-bs', type=int, default=64)
 
@@ -58,7 +57,6 @@ def main(**kwargs):
 
     num_classes = kwargs.get('num_classes')
     device = kwargs.get('device')
-    precision = torch.float16 if kwargs.get('precision') == 'float16' else torch.float32
 
     batch_size = kwargs.get('batch_size')
     
@@ -72,7 +70,7 @@ def main(**kwargs):
 
     backbone = get_backbone(backbone_name)
 
-    model = FacialKeypointsDetector(backbone, device=device, precision=precision, num_classes=num_classes)
+    model = FacialKeypointsDetector(backbone, device=device, num_classes=num_classes)
 
 
     transform = transforms.Compose([

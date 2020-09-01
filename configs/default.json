@@ -7,7 +7,6 @@
     "optimizer": "ADAM",
 
     "device": "cuda",
-    "precision":"float32",
     "num_classes": 30,
     "batch_size": 32,
     "epochs": 10,
