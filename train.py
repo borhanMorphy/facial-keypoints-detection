@@ -109,7 +109,7 @@ def main(**kwargs):
     writer = SummaryWriter(log_dir=tensorboard_log_dir)
 
     if seed: seed_everything(seed)
-    
+
     # TODO calculate mean and std
     mean = hyperparameters.get('mean',0)
     std = hyperparameters.get('std',1)
