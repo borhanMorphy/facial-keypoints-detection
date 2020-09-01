@@ -1,9 +1,11 @@
 from .shufflenet import shufflenet
 from .inception import inception_v3
+from .resnet import resnet50
 
 __backbone_mapper__ = {
     'shufflenet': shufflenet,
-    'inception_v3':inception_v3
+    'inception_v3':inception_v3,
+    'resnet50':resnet50
 }
 
 def get_backbone(backbone_name:str, pretrained:bool=True):

@@ -2,7 +2,7 @@
     "training_data_path": "./data/training_fixed",
     "checkpoint_path": "./checkpoints",
 
-    "backbone": "inception_v3",
+    "backbone": "resnet50",
     "criterion": "RMSE",
     "optimizer": "ADAM",
 
