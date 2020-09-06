@@ -95,6 +95,7 @@ def main(**kwargs):
     batch_size = kwargs.get('batch_size')
     epochs = kwargs.get('epochs')
     hyperparameters = kwargs.get('hyperparameters',{})
+    augmentations = kwargs.get('augmentations',{})
     verbose = kwargs.get('verbose')
 
     train_split = kwargs.get('train_split')
@@ -105,6 +106,10 @@ def main(**kwargs):
     resume = kwargs.get('resume')
 
     seed = hyperparameters.get('seed')
+
+    random_jitter = augmentations.get('jitter',{})
+    random_horizontal_flip = augmentations.get('horizontal_flip', 0.5)
+    random_rotation = augmentations.get('rotation', 20)
 
     writer = SummaryWriter(log_dir=tensorboard_log_dir)
 
@@ -131,14 +136,15 @@ def main(**kwargs):
 
     scaler = GradScaler()
 
-    train_transforms = val_transforms = None
-    train_target_transform = val_target_transform = TargetTransform(original_img_size)
-    train_transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.ColorJitter(brightness=0.3,contrast=0.5,saturation=0.5,hue=0.3),
-        transforms.Resize(model.get_input_size()),
-        transforms.ToTensor(),
-        transforms.Normalize(mean,std)])
+    val_transforms = None
+    val_target_transform = TargetTransform(original_img_size)
+
+    train_transform = train_target_transform = None
+    train_transforms = transforms.TrainTransforms(model.get_input_size(), original_img_size, 
+        mean=mean, std=std, brightness=random_jitter.get('brightness'),
+        contrast=random_jitter.get('contrast'), saturation=random_jitter.get('saturation'),
+        hue=random_jitter.get('hue'), rotation_degree=random_rotation,
+        hflip=random_horizontal_flip)
 
     val_transform = transforms.Compose([
         transforms.ToPILImage(),

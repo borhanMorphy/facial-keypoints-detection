@@ -129,11 +129,25 @@ def get_test_dataset(root_path:str, transform=None):
 
 if __name__ == "__main__":
     import sys
-    ds = FKDataset_test(sys.argv[1])
-
-    for img,img_id in ds:
+    import torchvision.transforms.functional as VF
+    from PIL import Image
+    from transforms.train import rotate_points_counter_clockwise
+    
+    datasets = get_training_datasets(sys.argv[1],(None,None,None),(None,None,None),[1])
+    ds = datasets[0]
+    degree = -10
+    for img,targets in ds:
         img = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-        print(img_id)
+        h,w = img.shape[:2]
+        cx,cy = w//2, h//2
+        img = Image.fromarray(img)
+        #img = VF.rotate(img,degree)
+        img = img.rotate(degree)
+        img = np.array(img)
+        targets = rotate_points_counter_clockwise(targets.reshape(-1,2),degree,(cx,cy))
+        print(targets)
+        for x,y in targets.reshape(-1,2):
+            img = cv2.circle(img,(x,y), 1, (0,0,255))
         cv2.imshow("",img)
         if cv2.waitKey(0) == 27:
             break
