@@ -9,13 +9,13 @@
     "device": "cuda",
     "num_classes": 30,
     "batch_size": 32,
-    "epochs": 20,
+    "epochs": 40,
     "train_split": 0.7,
     "nfolds": 3,
 
     "hyperparameters": {
         "optimizer": {
-            "lr": 3e-4,
+            "lr": 1e-4,
             "weight_decay": 5e-4
         },
         "mean": 0,
@@ -30,8 +30,8 @@
             "saturation": 0.5,
             "hue": 0.3
         },
-        "horizontal_flip": 0.0,
-        "rotation": 0
+        "horizontal_flip": 0.5,
+        "rotation": 20
     },
 
     "verbose": 10
