@@ -33,7 +33,6 @@ mkdir ./data
 kaggle competitions download -c facial-keypoints-detection -p data
 
 # unzipping
-unzip ./data/facial-keypoints-detection -d ./data/
 unzip ./data/training.zip -d ./data/
 unzip ./data/test.zip -d ./data/
 rm ./data/*.zip
