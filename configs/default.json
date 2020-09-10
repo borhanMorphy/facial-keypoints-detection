@@ -9,7 +9,7 @@
     "device": "cuda",
     "num_classes": 30,
     "batch_size": 32,
-    "epochs": 20,
+    "epochs": 40,
     "train_split": 0.7,
     "nfolds": 3,
 
