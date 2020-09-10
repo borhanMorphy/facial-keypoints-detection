@@ -111,7 +111,7 @@ def main(**kwargs):
     random_horizontal_flip = augmentations.get('horizontal_flip', 0.5)
     random_rotation = augmentations.get('rotation', 20)
 
-    writer = SummaryWriter(log_dir=tensorboard_log_dir)
+    writer = SummaryWriter(log_dir=tensorboard_log_dir, flush_secs=20)
 
     if seed: seed_everything(seed)
 

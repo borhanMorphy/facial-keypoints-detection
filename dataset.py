@@ -26,11 +26,13 @@ labels = [
 
 class FKDataset_train(Dataset):
 
-    def __init__(self,root_path:str, img_ids, label_mapper:List=None,
+    def __init__(self,root_path:str, img_ids:List=None, label_mapper:List=None,
             transforms=None, transform=None, target_transform=None):
         self.ids = []
         self.targets = []
         self.label_mapper = label_mapper if label_mapper else labels
+        if not img_ids:
+            img_ids = [".".join(p.split(".")[:-1]) for p in os.listdir(root_path) if p.endswith(".txt")]
 
         for name in img_ids:
             targets = []

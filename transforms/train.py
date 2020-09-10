@@ -6,6 +6,7 @@ import torchvision.transforms.functional as vis_F
 import random
 import math
 from typing import Tuple
+from cv2 import cv2
 
 class RandomHorizontalFlip(torch.nn.Module):
     """Horizontally flip the given image randomly with a given probability.
@@ -124,7 +125,7 @@ def rotate_points_counter_clockwise(points:np.ndarray, degree:float, center:Tupl
 class TrainTransforms():
     def __init__(self, img_size:int, original_size:int, mean:float=0, std:float=1,
             brightness:float=0.3, contrast:float=0.5, saturation:float=0.5, hue:float=0.3,
-            rotation_degree:int=20, hflip:float=0.5):
+            rotation_degree:int=10, hflip:float=0.5):
 
         self.original_size = original_size
         self.to_pil = transforms.ToPILImage()
@@ -136,14 +137,45 @@ class TrainTransforms():
         self.r_horizontal_flip = RandomHorizontalFlip(p=hflip)
         self.r_rotation = RandomRotation(rotation_degree)
 
-    def __call__(self, img:np.ndarray, targets:np.ndarray):
+    def __call__(self, oimg:np.ndarray, targets:np.ndarray):
         targets = targets / self.original_size
-        img = self.to_pil(img)
+        img = self.to_pil(oimg)
         img,angle = self.r_rotation(img)
         targets = rotate_points_counter_clockwise(targets.reshape(-1,2), angle, (0.5,0.5))
         img,flipped = self.r_horizontal_flip(img)
         if flipped:
             targets[:,0] = 1 - targets[:,0]
+            tmp_targets = targets.copy()
+            targets[1],targets[2] = tmp_targets[2],tmp_targets[1]
+            targets[4],targets[6] = tmp_targets[6],tmp_targets[4]
+            targets[5],targets[7] = tmp_targets[7],tmp_targets[5]
+            targets[8],targets[10] = tmp_targets[10],tmp_targets[8]
+            targets[9],targets[11] = tmp_targets[11],tmp_targets[9]
+            targets[12],targets[13] = tmp_targets[13],tmp_targets[12]
+
+            # 1 <=> 2
+            # 4 <=> 6
+            # 5 <=> 7
+            # 8 <=> 10
+            # 9 <=> 11
+            # 12 <=> 13
+            """
+                nose_tip_x, nose_tip_y
+                left_eye_center_x, left_eye_center_y
+                right_eye_center_x, right_eye_center_y
+                mouth_center_bottom_lip_x, mouth_center_bottom_lip_y
+                left_eye_inner_corner_x, left_eye_inner_corner_y
+                left_eye_outer_corner_x, left_eye_outer_corner_y
+                right_eye_inner_corner_x, right_eye_inner_corner_y
+                right_eye_outer_corner_x, right_eye_outer_corner_y
+                left_eyebrow_inner_end_x, left_eyebrow_inner_end_y
+                left_eyebrow_outer_end_x, left_eyebrow_outer_end_y
+                right_eyebrow_inner_end_x, right_eyebrow_inner_end_y
+                right_eyebrow_outer_end_x, right_eyebrow_outer_end_y
+                mouth_left_corner_x, mouth_left_corner_y
+                mouth_right_corner_x, mouth_right_corner_y
+                mouth_center_top_lip_x, mouth_center_top_lip_y
+            """
 
         targets = torch.from_numpy(targets.reshape(-1))
         img = self.color_jitter(img)
@@ -152,7 +184,3 @@ class TrainTransforms():
         img = self.normalize(img)
 
         return img,targets
-
-if __name__ == "__main__":
-    import sys
-    sys.path.append("..")
