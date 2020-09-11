@@ -61,7 +61,10 @@ def load_checkpoint(model, optimizer, scheduler=None,
     assert "epoch" in state_dict,"epoch not found in the state dictionary"
 
     model.load_state_dict(state_dict['module'])
-    optimizer.load_state_dict(state_dict['optimizer'])
+    try:
+        optimizer.load_state_dict(state_dict['optimizer'])
+    except Exception as e:
+        print("Warning! optimizer is changed\n",e)
     if scheduler: scheduler.load_state_dict(state_dict['scheduler'])
     best_loss = state_dict['best_loss']
     epoch = state_dict['epoch']
