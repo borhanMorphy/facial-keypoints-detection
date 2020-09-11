@@ -10,7 +10,9 @@ class FacialKeypointsDetector(nn.Module):
 
         self.backbone = backbone
         self.pool = nn.AdaptiveAvgPool2d(output_size=1)
-        self.head = nn.Linear(backbone.out_features, num_classes)
+        self.head = nn.Sequential(
+            nn.Linear(backbone.out_features, num_classes)
+        )
         self.criterion = criterion
         self.device = device
         self.name = f"fkd_{backbone.name}"
@@ -23,7 +25,7 @@ class FacialKeypointsDetector(nn.Module):
         features = self.backbone(data) # N, out_features, x, x
         features = self.pool(features).flatten(start_dim=1) # N, out_features
         preds = self.head(features) # N, num_classes
-        return torch.sigmoid(preds) # activate with sigmoid to fit between [0,1]
+        return preds
 
     def training_step(self, data:torch.Tensor, targets:torch.Tensor):
         # if model mode is not training than switch to training mode

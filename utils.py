@@ -49,7 +49,7 @@ def save_checkpoint(model, optimizer, epoch:int, best_loss:float,
     torch.save(checkpoint, checkpoint_file_path)
 
 def load_checkpoint(model, optimizer, scheduler=None,
-        save_path:str='./checkpoints',suffix:str='last') -> Tuple[int,float]:
+        save_path:str='./checkpoints',suffix:str='last', only_weights:bool=False) -> Tuple[int,float]:
 
     checkpoint_file_path = os.path.join(save_path,f"{model.name}_{suffix}.pt")
     assert os.path.isfile(checkpoint_file_path),f"checkpoint does not found for given directory {save_path}"
@@ -61,11 +61,9 @@ def load_checkpoint(model, optimizer, scheduler=None,
     assert "epoch" in state_dict,"epoch not found in the state dictionary"
 
     model.load_state_dict(state_dict['module'])
-    try:
+    if not only_weights:
         optimizer.load_state_dict(state_dict['optimizer'])
-    except Exception as e:
-        print("Warning! optimizer is changed\n",e)
-    if scheduler: scheduler.load_state_dict(state_dict['scheduler'])
+        if scheduler: scheduler.load_state_dict(state_dict['scheduler'])
     best_loss = state_dict['best_loss']
     epoch = state_dict['epoch']
     return best_loss,epoch

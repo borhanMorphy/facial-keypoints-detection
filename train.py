@@ -53,6 +53,7 @@ def parse_arguments():
     ap.add_argument('--nfolds', type=int)
 
     ap.add_argument('--resume', action='store_true')
+    ap.add_argument('--only-weights', action='store_true')
     ap.add_argument('--seed', type=int)
     ap.add_argument('--tensorboard-log-dir', type=str, default='./runs')
 
@@ -104,6 +105,7 @@ def main(**kwargs):
     val_splits = [(1-train_split) / nfolds] * nfolds
 
     resume = kwargs.get('resume')
+    only_weights = kwargs.get('only_weights')
 
     seed = hyperparameters.get('seed')
 
@@ -171,7 +173,7 @@ def main(**kwargs):
     if resume:
         print(Fore.CYAN, f"loading checkpoint from {checkpoint_path}",Style.RESET_ALL)
         best_loss,current_epoch = load_checkpoint(model, optimizer, scheduler=scheduler,
-            save_path=checkpoint_path, suffix='last')
+            save_path=checkpoint_path, suffix='last', only_weights=only_weights)
 
     try:
         for epoch in range(current_epoch,epochs):
