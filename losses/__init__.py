@@ -13,6 +13,11 @@ __criterion_mapper__ = {
         'kwargs':{}
     },
 
+    'L1':{
+        'cls': nn.L1Loss,
+        'kwargs': {}
+    },
+
     'SL1':{
         'cls': nn.SmoothL1Loss,
         'kwargs': {}
