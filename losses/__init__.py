@@ -11,6 +11,11 @@ __criterion_mapper__ = {
     'RMSE':{
         'cls': RMSELoss,
         'kwargs':{}
+    },
+
+    'SL1':{
+        'cls': nn.SmoothL1Loss,
+        'kwargs': {}
     }
 }
 
