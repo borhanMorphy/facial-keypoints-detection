@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from losses import get_criterion
 
 class FacialKeypointsDetector(nn.Module):
     def __init__(self, backbone:nn.Module, criterion=None,
@@ -14,6 +15,7 @@ class FacialKeypointsDetector(nn.Module):
             nn.Linear(backbone.out_features, num_classes)
         )
         self.criterion = criterion
+        self.rmse = get_criterion("RMSE")
         self.device = device
         self.name = f"fkd_{backbone.name}"
         self.to(device)
@@ -39,7 +41,7 @@ class FacialKeypointsDetector(nn.Module):
         if self.training: self.eval()
         with torch.no_grad():
             preds = self.forward(data.to(self.device))
-            loss = self.criterion(preds, targets.to(self.device))
+            loss = self.rmse(preds, targets.to(self.device))
         return loss
 
     def test_step(self, data:torch.Tensor, targets:torch.Tensor):
