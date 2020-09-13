@@ -91,6 +91,7 @@ def main(**kwargs):
     for imgs,img_ids in tqdm(dl, total=len(dl.dataset)//batch_size):
         # {img_id:{'loc1':pred}}
         preds = model.predict(imgs) * original_img_size
+        preds = torch.clamp(min=0,max=original_img_size)
         for img_idx,pred in zip(img_ids,preds.cpu().numpy().tolist()):
             predictions[img_idx] = {}
             for label,location in zip(labels,pred):
