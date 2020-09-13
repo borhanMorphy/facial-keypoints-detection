@@ -125,9 +125,10 @@ def rotate_points_counter_clockwise(points:np.ndarray, degree:float, center:Tupl
 class TrainTransforms():
     def __init__(self, img_size:int, original_size:int, mean:float=0, std:float=1,
             brightness:float=0.3, contrast:float=0.5, saturation:float=0.5, hue:float=0.3,
-            rotation_degree:int=10, hflip:float=0.5):
+            rotation_degree:int=10, hflip:float=0.5, debug:bool=False):
 
         self.original_size = original_size
+        self.target_size = img_size
         self.to_pil = transforms.ToPILImage()
         self.color_jitter = transforms.ColorJitter(
             brightness=brightness, contrast=contrast, saturation=saturation, hue=hue)
@@ -136,14 +137,17 @@ class TrainTransforms():
         self.normalize = transforms.Normalize(mean,std)
         self.r_horizontal_flip = RandomHorizontalFlip(p=hflip)
         self.r_rotation = RandomRotation(rotation_degree)
+        self.debug = debug
 
     def __call__(self, oimg:np.ndarray, targets:np.ndarray):
         targets = targets / self.original_size
         img = self.to_pil(oimg)
         img,angle = self.r_rotation(img)
+        if self.debug: print(f"image rotated {angle} degree")
         targets = rotate_points_counter_clockwise(targets.reshape(-1,2), angle, (0.5,0.5))
         img,flipped = self.r_horizontal_flip(img)
         if flipped:
+            if self.debug: print("image horizontally flipped")
             targets[:,0] = 1 - targets[:,0]
             tmp_targets = targets.copy()
             targets[1],targets[2] = tmp_targets[2],tmp_targets[1]
@@ -180,6 +184,9 @@ class TrainTransforms():
         targets = torch.from_numpy(targets.reshape(-1))
         img = self.color_jitter(img)
         img = self.resize(img)
+        if self.debug:
+            targets *= self.target_size
+            return np.array(img,dtype=np.uint8), targets.numpy()
         img = self.to_tensor(img)
         img = self.normalize(img)
 
