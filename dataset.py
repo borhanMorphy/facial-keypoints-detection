@@ -41,6 +41,7 @@ class FKDataset_train(Dataset):
                 for row in data:
                     assert len(row.split(" ")) == 2,f"broken data {row}"
                     label,value = row.split(" ")
+                    if label not in self.label_mapper: continue
                     if value == 'None':
                         targets = []
                         break
@@ -103,7 +104,7 @@ class FKDataset_test(Dataset):
     def __len__(self):
         return len(self.ids)
 
-def get_training_datasets(root_path:str, train_transforms, val_transforms, split_ratios):
+def get_training_datasets(root_path:str, train_transforms, val_transforms, split_ratios, label_mapper:List=None):
     assert sum(split_ratios) <= 1.0
     names = [os.path.splitext(fname)[0] for fname in os.listdir(root_path) if fname.endswith(".jpg")]
     shuffle(names)
@@ -121,7 +122,7 @@ def get_training_datasets(root_path:str, train_transforms, val_transforms, split
             FKDataset_train(root_path, subnames,
                 transforms=transforms,
                 transform=transform,
-                target_transform=target_transform) )
+                target_transform=target_transform, label_mapper=label_mapper) )
 
     return datasets
 

@@ -78,6 +78,12 @@ class TargetTransform():
         return torch.from_numpy(targets).float() / self.img_size
 
 def main(**kwargs):
+    label_mapper = [
+        "nose_tip_x", "nose_tip_y",
+        "left_eye_center_x", "left_eye_center_y",
+        "right_eye_center_x", "right_eye_center_y",
+        "mouth_center_bottom_lip_x","mouth_center_bottom_lip_y"]
+
     training_path = kwargs.get('training_data_path')
     checkpoint_path = kwargs.get('checkpoint_path')
     tensorboard_log_dir = kwargs.get('tensorboard_log_dir')
@@ -157,7 +163,7 @@ def main(**kwargs):
     train_dataset,*val_datasets = get_training_datasets(root_path=training_path,
         train_transforms=(train_transforms,train_transform,train_target_transform),
         val_transforms=(val_transforms,val_transform,val_target_transform),
-        split_ratios=splits)
+        split_ratios=splits, label_mapper=label_mapper)
 
     val_dls = []
     train_dl = torch.utils.data.DataLoader(train_dataset,
