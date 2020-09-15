@@ -162,7 +162,7 @@ def main(**kwargs):
     val_dls = []
     train_dl = torch.utils.data.DataLoader(train_dataset,
         num_workers=4, batch_size=batch_size,
-        pin_memory=True, collate_fn=custom_collate_fn)
+        pin_memory=True, collate_fn=custom_collate_fn, shuffle=True)
 
     for val_ds in val_datasets:
         val_dls.append( torch.utils.data.DataLoader(
