@@ -12,7 +12,9 @@ class FacialKeypointsDetector(nn.Module):
         self.backbone = backbone
         self.pool = nn.AdaptiveAvgPool2d(output_size=1)
         self.head = nn.Sequential(
-            nn.Linear(backbone.out_features, num_classes)
+            nn.Linear(backbone.out_features, num_classes),
+            nn.Sigmoid(),
+            nn.Linear(num_classes,num_classes)
         )
         self.criterion = criterion
         self.rmse = get_criterion("RMSE")
