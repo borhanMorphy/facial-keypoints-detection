@@ -6,6 +6,7 @@ from typing import Tuple
 
 class DoubleStageRegressor(nn.Module):
     def __init__(self, in_features:int, out_features:int):
+        super(DoubleStageRegressor,self).__init__()
         self.fc1 = nn.Linear(in_features,out_features)
         self.act = nn.Sigmoid()
         self.fc2 = nn.Linear(out_features,out_features)
